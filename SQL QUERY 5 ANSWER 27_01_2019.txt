@@ -1,0 +1,17 @@
+USE SQLPlayground
+
+DECLARE @UniqueID INT;
+SET @UniqueID = (SELECT COUNT(DISTINCT ProductID) FROM dbo.Product)
+
+SELECT a.CustomerID, a.CustomerName
+
+FROM
+(
+SELECT Cu.CustomerID, Cu.CustomerName, SUM(Pu.Qty) AS TotalQty, 
+		COUNT(DISTINCT Pu.ProductId) AS DiffID
+FROM dbo.Customer as Cu, dbo.Purchase as Pu
+WHERE Cu.CustomerId = Pu.CustomerId
+GROUP BY Cu.CustomerID, Cu.CustomerName
+) a
+
+WHERE a.DiffID = @UniqueID AND a.TotalQty > 50

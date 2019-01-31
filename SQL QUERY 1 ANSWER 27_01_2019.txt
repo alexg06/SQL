@@ -1,0 +1,63 @@
+USE WideWorldImporters
+
+SELECT a.CustomerID, a.CustomerName, TotalNbOrders, TotalNBInvoices, 
+	c.TotalOrderValue AS OrdersTotalValue, d.TotalInvoiceValue AS InvoicesTotalValue, 
+	ABS((c.TotalOrderValue - d.TotalInvoiceValue)) AS AbsoluteValueDifference 
+	
+FROM
+
+(SELECT Sc.CustomerID, Sc.CustomerName, COUNT(So.CustomerID) AS TotalNBOrders
+
+FROM Sales.Customers as Sc,
+	Sales.Orders as So
+
+WHERE Sc.CustomerID = So.CustomerID AND So.PickingCompletedWhen IS NOT NULL
+GROUP BY Sc.CustomerID, Sc.CustomerName
+) a
+
+INNER JOIN
+
+(SELECT Sc.CustomerID, COUNT(Si.CustomerID) AS TotalNBInvoices
+
+FROM Sales.Customers as Sc,
+	Sales.Invoices as Si
+
+WHERE Sc.CustomerID = Si.CustomerID
+GROUP BY Sc.CustomerID
+) b
+ON a.CustomerID = b.CustomerID
+
+INNER JOIN
+
+(SELECT TotalOrderValue, CustomerID
+FROM
+(
+	SELECT SUM(a.TotalOrderbyID) AS TotalOrderValue, a.CustomerID as CustomerID
+	FROM
+		(SELECT SUM(Sol.Quantity * Sol.UnitPrice) AS TotalOrderbyID, So.OrderID, So.CustomerID
+		FROM Sales.OrderLines as Sol, Sales.Orders as So
+		WHERE Sol.OrderID = So.OrderID AND So.PickingCompletedWhen IS NOT NULL
+		GROUP BY So.CustomerID, So.OrderID
+		) a
+	GROUP BY a.CustomerID
+	) z
+) c
+ON a.CustomerID = c.CustomerID
+
+INNER JOIN
+
+(SELECT TotalInvoiceValue, CustomerID FROM(
+	SELECT SUM(a.TotalInvoicebyID) AS TotalInvoiceValue, a.CustomerID
+	FROM
+		(SELECT SUM(Sil.Quantity * Sil.UnitPrice) AS TotalInvoicebyID, 
+		Si.InvoiceID, Si.CustomerID
+		FROM Sales.InvoiceLines as Sil, Sales.Invoices as Si
+		WHERE Sil.InvoiceID = Si.InvoiceID
+		GROUP BY Si.CustomerID, Si.InvoiceID
+	) a
+	GROUP BY a.CustomerID
+) y
+) d
+ON a.CustomerID = d.CustomerID
+
+ORDER BY AbsoluteValueDifference DESC, TotalNBOrders ASC ,a.CustomerName ASC

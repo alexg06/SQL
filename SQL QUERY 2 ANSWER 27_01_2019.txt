@@ -1,0 +1,23 @@
+USE WideWorldImporters
+
+DECLARE @LowestInvoice INT
+SET @LowestInvoice =
+(SELECT MIN(Sil.InvoiceID)
+FROM Sales.Invoices as Si
+JOIN Sales.InvoiceLines AS Sil
+ON Si.InvoiceID = Sil.InvoiceID
+WHERE CustomerID = 1060)
+
+DECLARE @LowestInvoiceLine INT
+SET @LowestInvoiceLine =
+(SELECT MIN(Sil.InvoiceLineID)
+FROM Sales.Invoices as Si
+JOIN Sales.InvoiceLines AS Sil
+ON Si.InvoiceID = Sil.InvoiceID
+WHERE CustomerID = 1060)
+--ORDER BY Si.InvoiceID ASC, Sil.InvoiceLineID ASC)
+
+UPDATE Sales.InvoiceLines
+SET Unitprice = UnitPrice + 20
+FROM Sales.InvoiceLines as Sil
+WHERE Sil.InvoiceLineID = @LowestInvoiceLine AND Sil.InvoiceID = @LowestInvoice

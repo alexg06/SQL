@@ -1,0 +1,179 @@
+USE WideWorldImporters
+
+SELECT ggg.CustomerCategoryName, ggg.MaxLoss AS MaxLoss, CustomerName, CustomerID 
+
+FROM
+
+(
+SELECT zz.CustomerCategoryName, MAX(zz.MaxLoss) as MaxLoss
+FROM
+
+(SELECT tt.CustomerCategoryName, tt.MaxLoss AS MaxLoss, tt.CustomerID, tt.CustomerName
+
+FROM
+
+
+(
+	SELECT a.CustomerID AS CustomerID, a.CustomerName AS CustomerName, 
+		a.CustomerCategoryID As CustomerCategoryID,  
+	(c.TotalOrderValue - d.TotalInvoiceValue) AS MaxLoss , e.CustomerCategoryName
+	
+	FROM
+	(
+		(SELECT Sc.CustomerID, Sc.CustomerName, Sc.CustomerCategoryID, COUNT(So.CustomerID) AS TotalNBOrders
+
+		FROM Sales.Customers as Sc,
+		Sales.Orders as So
+
+	WHERE Sc.CustomerID = So.CustomerID
+	GROUP BY Sc.CustomerID, Sc.CustomerName, Sc.CustomerCategoryID
+		) a
+
+	INNER JOIN
+
+	(SELECT Sc.CustomerID, COUNT(Si.CustomerID) AS TotalNBInvoices
+
+	FROM Sales.Customers as Sc,
+		Sales.Invoices as Si
+
+	WHERE Sc.CustomerID = Si.CustomerID
+	GROUP BY Sc.CustomerID
+	) b
+	ON a.CustomerID = b.CustomerID
+
+	INNER JOIN
+
+	(SELECT TotalOrderValue, CustomerID
+	FROM
+	(
+		SELECT SUM(a.TotalOrderbyID) AS TotalOrderValue, a.CustomerID as CustomerID
+		FROM
+			(SELECT SUM(Sol.Quantity * Sol.UnitPrice) AS TotalOrderbyID, So.OrderID, So.CustomerID
+			FROM Sales.OrderLines as Sol, Sales.Orders as So
+			WHERE Sol.OrderID = So.OrderID 
+			GROUP BY So.CustomerID, So.OrderID
+			) a
+			GROUP BY a.CustomerID
+		) z
+	) c
+	ON a.CustomerID = c.CustomerID
+
+	INNER JOIN
+
+	(SELECT TotalInvoiceValue, CustomerID FROM(
+		SELECT SUM(a.TotalInvoicebyID) AS TotalInvoiceValue, a.CustomerID
+		FROM
+			(SELECT SUM(Sil.Quantity * Sil.UnitPrice) AS TotalInvoicebyID, 
+			Si.InvoiceID, Si.CustomerID
+			FROM Sales.InvoiceLines as Sil, Sales.Invoices as Si
+			WHERE Sil.InvoiceID = Si.InvoiceID 
+			GROUP BY Si.CustomerID, Si.InvoiceID
+			) a
+			GROUP BY a.CustomerID
+		) y
+	) d
+	ON a.CustomerID = d.CustomerID
+
+	JOIN
+	(
+	SELECT Cc.CustomerCategoryName, Cc.CustomerCategoryID
+	FROM Sales.CustomerCategories AS Cc
+	) e
+	ON e.CustomerCategoryID = a.CustomerCategoryID
+	)
+
+) AS tt
+
+) AS zz
+
+
+GROUP BY zz.CustomerCategoryName
+) ttt
+
+JOIN
+
+(SELECT zz.CustomerCategoryName, zz.MaxLoss as MaxLoss, CustomerId, CustomerName
+FROM
+
+(SELECT tt.CustomerCategoryName, tt.MaxLoss AS MaxLoss, tt.CustomerID, tt.CustomerName
+
+FROM
+
+
+(
+	SELECT a.CustomerID AS CustomerID, a.CustomerName AS CustomerName, 
+		a.CustomerCategoryID As CustomerCategoryID,  
+	(c.TotalOrderValue - d.TotalInvoiceValue) AS MaxLoss , e.CustomerCategoryName
+	
+	FROM
+	(
+		(SELECT Sc.CustomerID, Sc.CustomerName, Sc.CustomerCategoryID, COUNT(So.CustomerID) AS TotalNBOrders
+
+		FROM Sales.Customers as Sc,
+		Sales.Orders as So
+
+	WHERE Sc.CustomerID = So.CustomerID
+	GROUP BY Sc.CustomerID, Sc.CustomerName, Sc.CustomerCategoryID
+		) a
+
+	INNER JOIN
+
+	(SELECT Sc.CustomerID, COUNT(Si.CustomerID) AS TotalNBInvoices
+
+	FROM Sales.Customers as Sc,
+		Sales.Invoices as Si
+
+	WHERE Sc.CustomerID = Si.CustomerID
+	GROUP BY Sc.CustomerID
+	) b
+	ON a.CustomerID = b.CustomerID
+
+	INNER JOIN
+
+	(SELECT TotalOrderValue, CustomerID
+	FROM
+	(
+		SELECT SUM(a.TotalOrderbyID) AS TotalOrderValue, a.CustomerID as CustomerID
+		FROM
+			(SELECT SUM(Sol.Quantity * Sol.UnitPrice) AS TotalOrderbyID, So.OrderID, So.CustomerID
+			FROM Sales.OrderLines as Sol, Sales.Orders as So
+			WHERE Sol.OrderID = So.OrderID 
+			GROUP BY So.CustomerID, So.OrderID
+			) a
+			GROUP BY a.CustomerID
+		) z
+	) c
+	ON a.CustomerID = c.CustomerID
+
+	INNER JOIN
+
+	(SELECT TotalInvoiceValue, CustomerID FROM(
+		SELECT SUM(a.TotalInvoicebyID) AS TotalInvoiceValue, a.CustomerID
+		FROM
+			(SELECT SUM(Sil.Quantity * Sil.UnitPrice) AS TotalInvoicebyID, 
+			Si.InvoiceID, Si.CustomerID
+			FROM Sales.InvoiceLines as Sil, Sales.Invoices as Si
+			WHERE Sil.InvoiceID = Si.InvoiceID 
+			GROUP BY Si.CustomerID, Si.InvoiceID
+			) a
+			GROUP BY a.CustomerID
+		) y
+	) d
+	ON a.CustomerID = d.CustomerID
+
+	JOIN
+	(
+	SELECT Cc.CustomerCategoryName, Cc.CustomerCategoryID
+	FROM Sales.CustomerCategories AS Cc
+	) e
+	ON e.CustomerCategoryID = a.CustomerCategoryID
+	)
+
+) AS tt
+
+) AS zz
+) ggg
+
+ON ggg.MaxLoss = ttt.MaxLoss
+
+ORDER BY MaxLoss DESC
